@@ -1,0 +1,29 @@
+version: 2
+models:
+  - name: dim_clips
+    description: One row per clip with file metadata, source and license, quality signals and AI labels.
+    columns:
+      - name: clip_id
+        data_tests: [unique, not_null]
+      - name: license
+        data_tests: [not_null]
+      - name: label_status
+        data_tests:
+          - accepted_values:
+              arguments: {values: [confirmed, low confidence, disagrees with source, no label]}
+  - name: fct_qc_checks
+    description: Every clip checked against every rule.
+    data_tests:
+      - unique_combination:
+          arguments: {columns: [clip_id, rule_id]}
+    columns:
+      - name: rule_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('qc_rules'), field: rule_id}
+  - name: fct_detections
+    columns:
+      - name: clip_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_clips'), field: clip_id}

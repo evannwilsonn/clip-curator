@@ -1,0 +1,19 @@
+# dbt looks for this file in the project folder first.
+# Local runs use DuckDB; set the env vars below and add --target snowflake for Snowflake.
+clip_curator:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: warehouse/clip_curator.duckdb
+      threads: 4
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      database: CLIP_CURATOR
+      schema: ANALYTICS
+      threads: 8

@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: video
+    description: Outputs of extract/run_extract.py, landed by ingest/load_raw.py. JSON tables hold one payload column.
+    schema: raw_video
+    loaded_at_field: _loaded_at
+    freshness:
+      warn_after: {count: 7, period: day}
+    tables:
+      - name: clips
+        description: ffprobe metadata, full-decode error count and SHA-256 per clip.
+      - name: frames
+        description: Signals for frames sampled at 2 per second.
+      - name: detections
+        description: YOLOv8n object detections (confidence 0.45 or more) every 1.5 seconds.
+      - name: scenes
+        description: CLIP zero-shot probability for each scene label, per clip.
+      - name: embeddings
+        description: 512-d CLIP embedding per clip (kept for search; not used in the rules).
+      - name: pairs
+        description: Similarity index of clip pairs with CLIP cosine 0.90 or more.
+      - name: sources
+        description: Source video manifest with URL, license and SHA-256.
+      - name: ground_truth
+        description: Which defect, if any, was deliberately applied to each clip by ingest/build_clips.py.

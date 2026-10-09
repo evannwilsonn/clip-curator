@@ -1,0 +1,22 @@
+version: 2
+seeds:
+  - name: qc_rules
+    description: >
+      The curation policy: one row per quality rule with its action (reject or send to review),
+      the defect it targets and its threshold. int_clip_rule_checks reads the thresholds from here,
+      so tuning a rule is a one-cell edit; rpt_rule_performance scores every rule against the labeled challenge set.
+    config:
+      column_types:
+        threshold: double
+    columns:
+      - name: rule_id
+        data_tests: [unique, not_null]
+      - name: action
+        data_tests:
+          - accepted_values:
+              arguments: {values: [reject, review]}
+  - name: source_catalog
+    description: What each source video actually shows, used to check the AI scene labels.
+    columns:
+      - name: source_id
+        data_tests: [unique, not_null]

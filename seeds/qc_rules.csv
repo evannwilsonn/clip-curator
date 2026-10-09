@@ -1,0 +1,11 @@
+rule_id,rule_name,action,targets_defect,threshold,description
+unreadable,Unreadable file,reject,corrupt,0,The file fails a full decode (ffmpeg reports errors or no frames decode)
+too_short,Too short,reject,too_short,3,Clip runs under 3 seconds
+low_resolution,Low resolution,reject,low_res,480,Frame width under 480 px
+black,Black frames,reject,black,5,Average brightness under 5 with almost no contrast (dead feed or lens cap)
+too_dark,Underexposed,reject,too_dark,35,Average brightness under 35 on a 0-255 scale
+overexposed,Overexposed,reject,overexposed,0.25,More than 25% of pixels clipped to white
+blurry,Out of focus,reject,blurred,4,Median frame sharpness (variance of the Laplacian) under 4
+frozen,Frozen frames,reject,frozen,0.05,Average frame-to-frame change under 0.05 while the picture isn't black
+exact_duplicate,Exact duplicate,reject,exact_dupe,0,Byte-identical to an earlier clip (same SHA-256); the earliest copy is kept
+near_duplicate,Possible re-upload,review,near_dupe,0.92,"CLIP similarity of 0.92 or more to an earlier clip, with motion and brightness curves that track it (correlation 0.89 / 0.85 or more)"

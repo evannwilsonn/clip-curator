@@ -1,0 +1,41 @@
+name: clip_curator
+version: "1.0.0"
+config-version: 2
+profile: clip_curator
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  clip_curator:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      core:
+        +schema: core
+      reporting:
+        +schema: reporting
+
+seeds:
+  clip_curator:
+    +schema: reference
+
+vars:
+  # CLIP labels below this probability go to a human labeler instead of being trusted
+  min_label_confidence: 0.5
+  # quality gate: the build fails if the rules catch fewer than this share of known defects
+  min_defect_recall: 0.85
+  # near-duplicate: a re-upload's motion and brightness curves track the original over time
+  near_dupe_motion_corr: 0.89
+  near_dupe_brightness_corr: 0.85
+  # the build fails if more than this share of clean clips get flagged
+  max_false_flag_rate: 0.05

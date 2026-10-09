@@ -1,0 +1,49 @@
+version: 2
+models:
+  - name: stg_video__clips
+    columns:
+      - name: clip_id
+        data_tests: [unique, not_null]
+      - name: source_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('source_catalog'), field: source_id}
+  - name: stg_video__frames
+    data_tests:
+      - unique_combination:
+          arguments: {columns: [clip_id, frame_index]}
+    columns:
+      - name: brightness
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 255}
+  - name: stg_video__detections
+    columns:
+      - name: confidence
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0.45, max_value: 1}
+  - name: stg_video__scenes
+    data_tests:
+      - unique_combination:
+          arguments: {columns: [clip_id, scene_label]}
+  - name: stg_video__pairs
+    data_tests:
+      - unique_combination:
+          arguments: {columns: [clip_a, clip_b]}
+  - name: stg_video__sources
+    columns:
+      - name: source_id
+        data_tests: [unique, not_null]
+  - name: stg_video__ground_truth
+    columns:
+      - name: clip_id
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments: {to: ref('stg_video__clips'), field: clip_id}
+      - name: injected_defect
+        data_tests:
+          - accepted_values:
+              arguments: {values: [none, blurred, too_dark, overexposed, frozen, black, low_res, too_short, corrupt, exact_dupe, near_dupe]}

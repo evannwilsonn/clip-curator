@@ -1,0 +1,10 @@
+dbt-duckdb>=1.9,<2
+duckdb>=1.1
+numpy>=1.26
+opencv-python-headless>=4.9
+pillow>=10
+ultralytics>=8.3          # YOLOv8 object detection
+open_clip_torch>=2.24     # CLIP zero-shot scene labels and embeddings
+# CPU-only PyTorch keeps the install small:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# for running the warehouse on Snowflake:  pip install dbt-snowflake

@@ -1,0 +1,18 @@
+source_id,setting,expected_scene
+bolt-detection,Industrial,metal bolts and machine parts on a conveyor
+bolt-multi-size-detection,Industrial,metal bolts and machine parts on a conveyor
+bottle-detection,Objects,bottles on a table
+car-detection,Traffic,a city street with cars and traffic
+classroom,Indoor people,a classroom with students at desks
+face-demographics-walking-and-pause,Indoor people,people walking through an indoor hallway or lobby
+face-demographics-walking,Indoor people,people walking through an indoor hallway or lobby
+fruit-and-vegetable-detection,Objects,fruit and vegetables on a table
+head-pose-face-detection-female-and-male,Faces,a close-up of a person's face
+head-pose-face-detection-female,Faces,a close-up of a person's face
+head-pose-face-detection-male,Faces,a close-up of a person's face
+one-by-one-person-detection,Indoor people,people walking through an indoor hallway or lobby
+people-detection,Indoor people,people walking through an indoor hallway or lobby
+person-bicycle-car-detection,Traffic,a city street with cars and traffic
+store-aisle-detection,Retail,a retail store aisle with products on shelves
+worker-zone-detection,Industrial,a factory or warehouse floor
+driver-action-recognition,In-vehicle,"a person driving a car, seen from inside the vehicle"
