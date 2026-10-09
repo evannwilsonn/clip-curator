@@ -129,3 +129,12 @@ dbt build --target snowflake
 - **Models:** [YOLOv8n](https://github.com/ultralytics/ultralytics) (AGPL-3.0) and [OpenCLIP ViT-B/32, LAION-2B](https://github.com/mlfoundations/open_clip).
 
 Built by Evan Wilson · Python · OpenCV · PyTorch · YOLOv8 · CLIP · DuckDB · dbt · Snowflake · SQL
+
+## Rebuilding the warehouse without the AI models
+
+`snapshots/extracted.tar.gz` holds the output of the extraction step (`data/extracted/`) from the published run. To rebuild the warehouse and dashboard without installing PyTorch or downloading video, unpack it and run the load and dbt steps:
+
+```bash
+mkdir -p data && tar -xzf snapshots/extracted.tar.gz -C data
+python ingest/load_raw.py && dbt build
+```
