@@ -1,7 +1,7 @@
 version: 2
 models:
   - name: rpt_clip_decisions
-    description: Accept, review or reject for every clip, with reasons, AI labels and the known defect.
+    description: Accept or reject for every clip, with reasons, AI labels and the known defect.
     columns:
       - name: clip_id
         data_tests: [unique, not_null]
@@ -9,11 +9,16 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              arguments: {values: [accept, review, reject]}
+              arguments: {values: [accept, reject]}
       - name: outcome
         data_tests:
           - accepted_values:
               arguments: {values: [caught, missed, flagged clean clip, 'clean, accepted']}
+  - name: rpt_label_quality
+    description: Few-shot vs. zero-shot scene-label accuracy on clips that weren't used as references.
+    columns:
+      - name: method
+        data_tests: [unique, not_null]
   - name: rpt_rule_performance
     columns:
       - name: rule_id
@@ -32,16 +37,17 @@ models:
         data_tests: [unique]
 
 exposures:
-  - name: clip_review_dashboard
+  - name: clip_curation_dashboard
     type: dashboard
     maturity: medium
     url: https://github.com/evannwilsonn/clip-curator/tree/main/dashboard
-    description: Curation review dashboard.
+    description: Curation dashboard with decisions, the rule scorecard and label accuracy.
     depends_on:
       - ref('rpt_clip_decisions')
       - ref('rpt_rule_performance')
       - ref('rpt_defect_detection')
       - ref('rpt_dataset_composition')
       - ref('rpt_object_inventory')
+      - ref('rpt_label_quality')
     owner:
       name: Evan Wilson

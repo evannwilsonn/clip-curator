@@ -2,7 +2,7 @@ version: 2
 seeds:
   - name: qc_rules
     description: >
-      The curation policy: one row per quality rule with its action (reject or send to review),
+      The curation policy: one row per quality rule with its action,
       the defect it targets and its threshold. int_clip_rule_checks reads the thresholds from here,
       so tuning a rule is a one-cell edit; rpt_rule_performance scores every rule against the labeled challenge set.
     config:
@@ -14,9 +14,20 @@ seeds:
       - name: action
         data_tests:
           - accepted_values:
-              arguments: {values: [reject, review]}
+              arguments: {values: [reject]}
+  - name: label_references
+    description: >
+      One labeled reference clip per source video. The few-shot labeler averages these clips' CLIP
+      embeddings into one centroid per scene and labels every other clip by its nearest centroid.
+    columns:
+      - name: clip_id
+        data_tests: [unique, not_null]
+      - name: scene
+        data_tests:
+          - relationships:
+              arguments: {to: ref('source_catalog'), field: expected_scene}
   - name: source_catalog
-    description: What each source video actually shows, used to check the AI scene labels.
+    description: What each source video actually shows, used to grade the AI scene labels.
     columns:
       - name: source_id
         data_tests: [unique, not_null]

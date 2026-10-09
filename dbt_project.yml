@@ -30,12 +30,11 @@ seeds:
     +schema: reference
 
 vars:
-  # CLIP labels below this probability go to a human labeler instead of being trusted
-  min_label_confidence: 0.5
-  # quality gate: the build fails if the rules catch fewer than this share of known defects
-  min_defect_recall: 0.85
-  # near-duplicate: a re-upload's motion and brightness curves track the original over time
-  near_dupe_motion_corr: 0.89
-  near_dupe_brightness_corr: 0.85
-  # the build fails if more than this share of clean clips get flagged
-  max_false_flag_rate: 0.05
+  # quality gates: the build fails if any of these slip
+  min_defect_recall: 0.95       # share of known-defect clips that must be rejected
+  max_false_flag_rate: 0.02     # share of clean clips that may be rejected
+  min_label_accuracy: 0.95      # AI scene labels vs. what each source video actually shows
+  # near-duplicate: frames must line up one-for-one (aligned difference / unaligned difference)
+  near_dupe_max_alignment_ratio: 0.62
+  # out of focus: sharpness must also be under half the same source's typical sharpness
+  blur_vs_source_ratio: 0.5

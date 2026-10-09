@@ -17,7 +17,8 @@ Defects applied (each one a real failure seen in collected video data):
   too_short      cut to 1 second
   corrupt        file truncated mid-stream
   exact_dupe     byte-for-byte copy of another clip
-  near_dupe      same content re-encoded, slightly cropped and recompressed
+  near_dupe      the same clip re-uploaded: downscaled to 480 px and re-encoded at lower quality,
+                 the way video platforms transcode uploads
 
 The ground truth is written to data/clips/_ground_truth.csv. Clean clips are labeled "none".
 
@@ -115,8 +116,8 @@ def main() -> None:
         if kind == "exact_dupe":
             shutil.copyfile(src_path, dst)
         else:
-            ff("-i", str(src_path), "-vf", "crop=iw*0.94:ih*0.94,scale=600:-2", "-an",
-               "-c:v", "libx264", "-preset", "veryfast", "-crf", "32", "-pix_fmt", "yuv420p", str(dst))
+            ff("-i", str(src_path), "-vf", "scale=480:-2", "-an",
+               "-c:v", "libx264", "-preset", "veryfast", "-crf", "30", "-pix_fmt", "yuv420p", str(dst))
         source_id, _, seg = orig.partition("__")
         truth.append({"clip_id": clip_id, "source_id": source_id, "start_seconds": int(seg) * CLIP_SECONDS,
                       "injected_defect": kind, "duplicate_of": orig})

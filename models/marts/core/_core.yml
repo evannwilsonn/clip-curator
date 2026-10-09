@@ -7,10 +7,8 @@ models:
         data_tests: [unique, not_null]
       - name: license
         data_tests: [not_null]
-      - name: label_status
-        data_tests:
-          - accepted_values:
-              arguments: {values: [confirmed, low confidence, disagrees with source, no label]}
+      - name: ai_scene
+        description: Few-shot CLIP scene label; null only when the file can't be decoded.
   - name: fct_qc_checks
     description: Every clip checked against every rule.
     data_tests:

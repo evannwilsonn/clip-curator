@@ -54,7 +54,7 @@ th:first-child,td:first-child{text-align:left}
 td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td small{display:block;color:var(--text-3);font-size:11.5px}
 .pill{display:inline-flex;align-items:center;gap:6px;font:600 11.5px var(--font);border-radius:999px;padding:2px 9px;white-space:nowrap}
-.pill.accept{color:var(--ok);background:var(--ok-bg)}.pill.review{color:var(--warn);background:var(--warn-bg)}.pill.reject{color:var(--bad);background:var(--bad-bg)}
+.pill.accept{color:var(--ok);background:var(--ok-bg)}.pill.reject{color:var(--bad);background:var(--bad-bg)}
 .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 .bars .row{display:grid;grid-template-columns:120px minmax(0,1fr) 70px;gap:10px;align-items:center;padding:5px 0;font-size:13px}
 .bars .track{height:12px;background:var(--surface-2);border-radius:4px;overflow:hidden;display:flex}
@@ -89,7 +89,7 @@ footer.lin a{color:var(--text-2)}
   <header class="top">
     <div class="brand">
       <h1>Clip Curator <span class="badge">AI video data pipeline</span></h1>
-      <p>Real-world clips go in. AI models and quality checks turn them into structured data, and tested rules decide which clips make it into a training dataset.</p>
+      <p>Real-world clips go in. AI models and quality checks turn them into structured data, and tested rules accept or reject every clip automatically, with no manual review.</p>
     </div>
   </header>
 
@@ -98,7 +98,7 @@ footer.lin a{color:var(--text-2)}
 
   <section class="grid">
     <article class="card full">
-      <header><h2>Review queue</h2>
+      <header><h2>Every clip and its decision</h2>
         <div class="seg" role="group" aria-label="Filter clips" id="filters"></div></header>
       <div class="gallery" id="gallery"></div>
       <button type="button" class="more" id="more" hidden>Show all</button>
@@ -113,9 +113,13 @@ footer.lin a{color:var(--text-2)}
       <p class="callout" id="defNote"></p>
     </article>
     <article class="card">
-      <header><h2>What's in the accepted dataset</h2><span class="sub">By source setting, from the AI labels</span></header>
-      <div style="overflow-x:auto"><table id="comp"></table></div>
+      <header><h2>AI scene labels</h2><span class="sub">Graded against what each source video actually shows</span></header>
+      <div class="bars" id="labels"></div>
       <p class="callout" id="labelNote"></p>
+    </article>
+    <article class="card">
+      <header><h2>What's in the accepted dataset</h2><span class="sub">By source setting</span></header>
+      <div style="overflow-x:auto"><table id="comp"></table></div>
     </article>
     <article class="card">
       <header><h2>Objects detected (YOLOv8)</h2><span class="sub">Accepted clips only</span></header>
@@ -131,20 +135,20 @@ footer.lin a{color:var(--text-2)}
 const D = window.CC_DATA || await fetch('data.json').then(r=>r.json());
 const $ = id => document.getElementById(id);
 const objs = t => t.rows.map(r=>Object.fromEntries(t.columns.map((c,i)=>[c,r[i]])));
-const dec = objs(D.decisions), rules = objs(D.rules), defects = objs(D.defects), comp = objs(D.composition), objects = objs(D.objects);
+const dec = objs(D.decisions), rules = objs(D.rules), defects = objs(D.defects), comp = objs(D.composition), objects = objs(D.objects), lq = objs(D.label_quality);
 const T = D.totals, pct = (v,d=0) => v==null?'–':(v*100).toFixed(d)+'%', num = v => Math.round(v).toLocaleString('en-US');
 const nice = s => s==null?'':s.replace(/_/g,' ');
 
-const acc=dec.filter(d=>d.decision==='accept'), rej=dec.filter(d=>d.decision==='reject'), rev=dec.filter(d=>d.decision==='review');
+const acc=dec.filter(d=>d.decision==='accept'), rej=dec.filter(d=>d.decision==='reject');
 const defective=dec.filter(d=>d.injected_defect!=='none'), caught=defective.filter(d=>d.decision!=='accept');
 const clean=dec.filter(d=>d.injected_defect==='none'), falseFlag=clean.filter(d=>d.decision!=='accept');
 const minutes=acc.reduce((s,d)=>s+(d.duration_s||0),0)/60;
 $('kpis').innerHTML=[
   ['Clips processed', num(dec.length), `${D.sources.rows.length} source videos, cut into 6-second clips`],
   ['Accepted', num(acc.length), `${minutes.toFixed(1)} minutes of usable footage`],
-  ['Rejected / to review', `${rej.length} / ${rev.length}`, 'Each with the rule that stopped it'],
-  ['Known defects caught', `${caught.length} of ${defective.length}`, `${pct(caught.length/defective.length,1)} recall on the labeled challenge set`],
-  ['Clean clips flagged', `${falseFlag.length} of ${clean.length}`, `${pct(falseFlag.length/clean.length,1)} false-flag rate`],
+  ['Rejected', num(rej.length), 'Each with the rule that stopped it'],
+  ['Known defects caught', `${caught.length} of ${defective.length}`, `${pct(caught.length/defective.length,1)} recall · ${falseFlag.length} of ${clean.length} clean clips wrongly rejected`],
+  ['Scene labels correct', `${num(lq[0].correct)} of ${num(lq[0].clips_graded)}`, `${pct(lq[0].accuracy,1)} few-shot vs. ${pct(lq[1].accuracy,1)} zero-shot`],
 ].map(([l,v,d])=>`<div class="kpi"><div class="lbl">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
 
 $('flow').innerHTML=[
@@ -152,12 +156,12 @@ $('flow').innerHTML=[
   ['02','Extract',`${num(T.frames)} frames scored: exposure, focus, motion`],
   ['03','AI models',`YOLOv8: ${num(T.detections)} objects · CLIP: ${num(T.scene_scores)} scene scores`],
   ['04','Warehouse',`Landed raw, modeled in dbt, ${num(T.pairs)} similarity pairs`],
-  ['05','Curate',`${rules.length} rules from one policy table, tested against ground truth`],
+  ['05','Curate',`${rules.length} rules from one policy table, scored against ground truth on every build`],
 ].map(([n,b,s])=>`<div class="step"><span class="n">${n}</span><b>${b}</b><span>${s}</span></div>`).join('');
 
 /* gallery */
-const FILTERS=[['issues','Needs a look',d=>d.decision!=='accept'||d.outcome!=='clean, accepted'],['reject','Rejected',d=>d.decision==='reject'],['review','Review',d=>d.decision==='review'],['accept','Accepted',d=>d.decision==='accept'],['errors','Rule mistakes',d=>d.outcome==='missed'||d.outcome==='flagged clean clip']];
-let filter='issues', showAll=false;
+const FILTERS=[['reject','Rejected',d=>d.decision==='reject'],['accept','Accepted',d=>d.decision==='accept'],['errors','Mistakes',d=>d.outcome==='missed'||d.outcome==='flagged clean clip'||(d.ai_scene&&!d.is_label_reference&&!d.ai_scene_correct&&['none','exact_dupe','near_dupe'].includes(d.injected_defect))]];
+let filter='reject', showAll=false;
 $('filters').innerHTML=FILTERS.map(([k,l,f])=>`<button type="button" data-f="${k}" aria-pressed="${k===filter}">${l} <span style="color:var(--text-3)">${dec.filter(f).length}</span></button>`).join('');
 $('filters').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;filter=b.dataset.f;showAll=false;$('filters').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderGallery()});
 $('more').addEventListener('click',()=>{showAll=true;renderGallery()});
@@ -168,7 +172,8 @@ function renderGallery(){
     const gt=d.injected_defect!=='none'?`<span class="gt" title="Defect applied when the challenge set was built">applied: ${nice(d.injected_defect)}</span>`:'';
     const why=d.decision==='accept'?'Passed every rule':(d.reasons||'')+(d.duplicate_of?` <span class="ai">of ${d.duplicate_of}</span>`:'');
     const mistake=d.outcome==='missed'?' <span style="color:var(--bad)">· missed</span>':d.outcome==='flagged clean clip'?' <span style="color:var(--warn)">· clean clip flagged</span>':'';
-    const ai=d.ai_scene?`<b>${d.ai_scene}</b> (${pct(d.ai_scene_confidence)}) · ${d.label_status}`:'No AI labels: file unreadable';
+    const qualityFail=d.decision==='reject'&&!/^(Exact duplicate|Re-upload)(, (Exact duplicate|Re-upload))*$/.test(d.reasons||'');
+    const ai=!d.ai_scene?'No AI labels: file unreadable':qualityFail?'Not labeled: failed a quality check':`Scene: <b>${d.ai_scene}</b>${d.is_label_reference?' · labeled reference':d.ai_scene_correct?'':' <span style="color:var(--bad)">(wrong)</span>'}`;
     return `<div class="clip"><div class="img${th?'':' none'}" ${th?`style="background-image:url(${th})"`:''} role="img" aria-label="Middle frame of ${d.clip_id}">${th?'':'unreadable'}<span class="pill ${d.decision}">${d.decision}</span>${gt}</div>
       <div class="body"><span class="id" title="${d.clip_id}">${d.clip_id}</span><span class="why">${why}${mistake}</span><span class="ai">${ai}</span>${d.ai_objects?`<span class="ai">Objects: ${d.ai_objects.split(', ').slice(0,4).join(', ')}</span>`:''}</div></div>`}).join('') || '<p class="sub">Nothing here.</p>';
   $('more').hidden=list.length<=lim; $('more').textContent=`Show all ${list.length}`;
@@ -177,17 +182,18 @@ function renderGallery(){
 $('rules').innerHTML=`<thead><tr><th>Rule</th><th>Threshold</th><th>Fired</th><th>Caught</th><th>False alarms</th><th>Recall</th><th class="hide-sm">Precision</th></tr></thead><tbody>`+
   rules.map(r=>`<tr><td>${r.rule_name}<small>${r.action} · targets ${nice(r.targets_defect)}</small></td><td>${r.threshold}</td><td>${num(r.fired)}</td><td>${num(r.hits)} / ${num(r.target_clips)}</td><td style="color:${r.false_alarms>0?'var(--warn)':'inherit'}">${num(r.false_alarms)}</td><td>${pct(r.recall)}</td><td class="hide-sm">${pct(r.precision)}</td></tr>`).join('')+'</tbody>';
 
-const dd=defects.filter(d=>d.injected_defect!=='none').sort((a,b)=>b.flag_rate-a.flag_rate||a.injected_defect.localeCompare(b.injected_defect));
+const dd=defects.filter(d=>d.injected_defect!=='none').sort((a,b)=>b.reject_rate-a.reject_rate||a.injected_defect.localeCompare(b.injected_defect));
 $('defSub').textContent=`${caught.length} of ${defective.length} applied defects stopped`;
-$('defects').innerHTML=dd.map(d=>`<div class="row"><span>${nice(d.injected_defect)}</span><div class="track"><div class="fill" style="width:${d.rejected/d.clips*100}%;background:var(--bad)"></div><div class="fill" style="width:${d.sent_to_review/d.clips*100}%;background:var(--warn)"></div></div><span class="n">${num(d.flagged)} / ${num(d.clips)}</span></div>`).join('')+
-  `<div class="row" style="color:var(--text-3)"><span></span><span><span style="display:inline-block;width:10px;height:10px;background:var(--bad);border-radius:2px;margin-right:6px"></span>Rejected <span style="display:inline-block;width:10px;height:10px;background:var(--warn);border-radius:2px;margin:0 6px 0 12px"></span>Sent to review</span><span></span></div>`;
+$('defects').innerHTML=dd.map(d=>`<div class="row"><span>${nice(d.injected_defect)}</span><div class="track"><div class="fill" style="width:${d.rejected/d.clips*100}%;background:var(--bad)"></div></div><span class="n">${num(d.rejected)} / ${num(d.clips)}</span></div>`).join('');
 const missed=dec.filter(d=>d.outcome==='missed'), ff=dec.filter(d=>d.outcome==='flagged clean clip');
-$('defNote').innerHTML=`<b>What it got wrong:</b> ${missed.length?missed.map(m=>`a ${nice(m.injected_defect)} (${m.clip_id}) slipped through`).join('; '):'nothing missed'}${ff.length?`, and ${ff.length} clean clip${ff.length>1?'s were':' was'} flagged (${ff.map(m=>`${m.clip_id}: ${m.reasons}`).join('; ')})`:''}. Those are the cases to tune next, and the build fails if recall drops below 85% or false flags rise above 5%.`;
+$('defNote').innerHTML=(missed.length||ff.length)
+  ? `<b>Mistakes this run:</b> ${missed.map(m=>`a ${nice(m.injected_defect)} (${m.clip_id}) slipped through`).concat(ff.map(m=>`${m.clip_id} was rejected for ${m.reasons}`)).join('; ')}.`
+  : `<b>No mistakes this run:</b> every applied defect was rejected and every clean clip was kept. The build fails if recall drops below 95%, more than 2% of clean clips get rejected, or labels fall under 95% correct, and a second run of the models reproduces every number exactly.`;
 
-$('comp').innerHTML=`<thead><tr><th>Setting</th><th>Clips</th><th class="hide-sm">Minutes</th><th>With people</th><th>AI label agrees</th></tr></thead><tbody>`+
-  comp.map(c=>`<tr><td>${c.setting}</td><td>${num(c.accepted_clips)}</td><td class="hide-sm">${c.minutes.toFixed(1)}</td><td>${pct(c.share_with_people)}</td><td style="color:${c.ai_label_accuracy<.5?'var(--warn)':'inherit'}">${pct(c.ai_label_accuracy)}</td></tr>`).join('')+'</tbody>';
-const agree=acc.filter(d=>d.label_status==='confirmed').length, people=acc.filter(d=>d.contains_people).length;
-$('labelNote').innerHTML=`CLIP's zero-shot scene label agrees with the source's known setting on <b>${pct(agree/acc.length)}</b> of accepted clips, and it's often confident when it's wrong. So the labels are treated as suggestions: disagreements and low-confidence calls are flagged for a human labeler instead of going straight into the dataset. <b>${people}</b> accepted clips contain people, which is tracked for consent and privacy review.`;
+$('comp').innerHTML=`<thead><tr><th>Setting</th><th>Clips</th><th class="hide-sm">Minutes</th><th>With people</th><th class="hide-sm">Scenes</th></tr></thead><tbody>`+
+  comp.map(c=>`<tr><td>${c.setting}</td><td>${num(c.accepted_clips)}</td><td class="hide-sm">${c.minutes.toFixed(1)}</td><td>${pct(c.share_with_people)}</td><td class="hide-sm" style="white-space:normal;text-align:right">${c.scenes}</td></tr>`).join('')+'</tbody>';
+$('labels').innerHTML=lq.map(l=>`<div class="row"><span>${l.method.split(' (')[0]}</span><div class="track"><div class="fill" style="width:${l.accuracy*100}%;background:${l.accuracy>=.95?'var(--ok)':'var(--warn)'}"></div></div><span class="n">${pct(l.accuracy,1)}</span></div>`).join('');
+$('labelNote').innerHTML=`Text prompts alone (zero-shot) got <b>${num(lq[1].correct)} of ${num(lq[1].clips_graded)}</b>: CLIP mistook a grey conveyor belt for asphalt and people paused in a hallway for portraits. The pipeline instead labels by example: one labeled reference clip per source video becomes a scene centroid, and every other clip takes the nearest one. That gets <b>${num(lq[0].correct)} of ${num(lq[0].clips_graded)}</b> right on clips the references never included.`;
 
 const om=Math.max(...objects.map(o=>o.clips));
 $('objects').innerHTML=objects.map(o=>`<div class="row"><span>${o.object_label}</span><div class="track"><div class="fill" style="width:${o.clips/om*100}%;background:var(--s1)"></div></div><span class="n">${num(o.clips)} clips</span></div>`).join('');

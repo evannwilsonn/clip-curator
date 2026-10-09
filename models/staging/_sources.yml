@@ -16,6 +16,8 @@ sources:
         description: YOLOv8n object detections (confidence 0.45 or more) every 1.5 seconds.
       - name: scenes
         description: CLIP zero-shot probability for each scene label, per clip.
+      - name: labels
+        description: Few-shot scene scores (similarity to each scene's reference centroid), per clip.
       - name: embeddings
         description: 512-d CLIP embedding per clip (kept for search; not used in the rules).
       - name: pairs

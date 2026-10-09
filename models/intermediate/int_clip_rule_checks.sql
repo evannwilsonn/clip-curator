@@ -20,7 +20,9 @@ c as (
         s.median_sharpness,
         s.avg_motion,
         s.avg_clipped_high,
-        coalesce(m.decode_errors, 0) > 0 or coalesce(m.frames_decoded, 0) = 0 as unreadable
+        coalesce(m.decode_errors, 0) > 0 or coalesce(m.frames_decoded, 0) = 0 as unreadable,
+        -- the same camera's typical sharpness, so a naturally soft camera isn't mistaken for a focus failure
+        median(case when s.avg_contrast >= 2 then s.median_sharpness end) over (partition by m.source_id) as source_sharpness
     from {{ ref('stg_video__clips') }} as m
     left join {{ ref('int_clip_signals') }} as s using (clip_id)
 ),
@@ -39,7 +41,11 @@ checks as (
     select clip_id, 'overexposed', not unreadable and avg_clipped_high > t_overexposed, avg_clipped_high from c cross join th
     union all
     -- a black picture has no edges at all; that's the black rule's job, not a focus problem
-    select clip_id, 'blurry', not unreadable and median_sharpness < t_blurry and avg_contrast >= 2, median_sharpness from c cross join th
+    select clip_id, 'blurry',
+           not unreadable and avg_contrast >= 2 and median_sharpness < t_blurry
+           and median_sharpness < {{ var('blur_vs_source_ratio') }} * source_sharpness,
+           median_sharpness
+    from c cross join th
     union all
     select clip_id, 'frozen', not unreadable and avg_motion < t_frozen and avg_contrast >= 2, avg_motion from c cross join th
     union all

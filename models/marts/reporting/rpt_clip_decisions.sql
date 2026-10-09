@@ -3,7 +3,6 @@ with fired as (
     select
         clip_id,
         max(case when action = 'reject' then 1 else 0 end)  as any_reject,
-        max(case when action = 'review' then 1 else 0 end)  as any_review,
         {{ string_list('case when fired then rule_name end', 'rule_id') }} as reasons,
         max(matches_clip_id)                                 as duplicate_of
     from {{ ref('fct_qc_checks') }}
@@ -15,9 +14,7 @@ select
     d.clip_id,
     d.source_id,
     d.setting,
-    case when f.any_reject = 1 then 'reject'
-         when f.any_review = 1 then 'review'
-         else 'accept' end                                   as decision,
+    case when f.any_reject = 1 then 'reject' else 'accept' end as decision,
     f.reasons,
     f.duplicate_of,
     d.duration_s,
@@ -25,11 +22,13 @@ select
     d.avg_brightness,
     d.median_sharpness,
     d.avg_motion,
+    d.expected_scene,
     d.ai_scene,
-    d.ai_scene_confidence,
-    d.ai_scene_matches_source,
-    d.needs_human_label,
-    d.label_status,
+    d.ai_scene_similarity,
+    d.ai_scene_correct,
+    d.zero_shot_scene,
+    d.zero_shot_correct,
+    d.is_label_reference,
     d.contains_people,
     d.ai_objects,
     g.injected_defect,

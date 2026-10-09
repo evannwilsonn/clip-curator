@@ -45,7 +45,7 @@ def table(con, sql):
 def main() -> None:
     con = duckdb.connect(str(DB), read_only=True)
     decisions = table(con, """select clip_id, source_id, setting, decision, reasons, duplicate_of, duration_s, width_px,
-        avg_brightness, median_sharpness, avg_motion, ai_scene, ai_scene_confidence, label_status, contains_people,
+        avg_brightness, median_sharpness, avg_motion, ai_scene, ai_scene_correct, is_label_reference, contains_people,
         ai_objects, injected_defect, outcome from reporting.rpt_clip_decisions order by clip_id""")
     payload = {
         "generated": date.today().isoformat(),
@@ -53,6 +53,7 @@ def main() -> None:
         "rules": table(con, "select * from reporting.rpt_rule_performance order by action, rule_id"),
         "defects": table(con, "select * from reporting.rpt_defect_detection order by injected_defect"),
         "composition": table(con, "select * from reporting.rpt_dataset_composition order by accepted_clips desc"),
+        "label_quality": table(con, "select * from reporting.rpt_label_quality order by method"),
         "objects": table(con, "select * from reporting.rpt_object_inventory order by clips desc, detections desc limit 12"),
         "sources": table(con, "select source_id, license, source_url from staging.stg_video__sources order by 1"),
         "totals": dict(zip(["clips", "frames", "detections", "scene_scores", "pairs"], con.execute("""select

@@ -20,15 +20,13 @@ select
     s.avg_motion,
     s.avg_clipped_high,
     a.ai_scene,
-    a.ai_scene_confidence,
-    a.ai_scene = sc.expected_scene                                   as ai_scene_matches_source,
-    a.ai_scene_confidence < {{ var('min_label_confidence') }}        as needs_human_label,
-    case
-        when a.ai_scene is null                                       then 'no label'
-        when a.ai_scene = sc.expected_scene                           then 'confirmed'
-        when a.ai_scene_confidence < {{ var('min_label_confidence') }} then 'low confidence'
-        else 'disagrees with source'
-    end                                                              as label_status,
+    a.ai_scene_similarity,
+    a.ai_scene_margin,
+    a.ai_scene = sc.expected_scene                                   as ai_scene_correct,
+    a.zero_shot_scene,
+    a.zero_shot_confidence,
+    a.zero_shot_scene = sc.expected_scene                            as zero_shot_correct,
+    r.clip_id is not null                                            as is_label_reference,
     a.contains_people,
     a.max_people_in_frame,
     a.ai_objects,
@@ -38,3 +36,4 @@ left join {{ ref('source_catalog') }} as sc using (source_id)
 left join {{ ref('stg_video__sources') }} as src using (source_id)
 left join {{ ref('int_clip_signals') }} as s using (clip_id)
 left join {{ ref('int_clip_ai_labels') }} as a using (clip_id)
+left join {{ ref('label_references') }} as r using (clip_id)

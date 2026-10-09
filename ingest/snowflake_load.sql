@@ -17,7 +17,7 @@ put file://data/extracted/ground_truth.csv @extract_stage auto_compress = true o
 
 execute immediate $$
 declare
-  tables array default array_construct('clips','frames','detections','scenes','embeddings','pairs','sources');
+  tables array default array_construct('clips','frames','detections','scenes','labels','embeddings','pairs','sources');
   t varchar;
 begin
   for i in 0 to array_size(tables) - 1 do

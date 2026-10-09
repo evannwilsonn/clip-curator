@@ -1,0 +1,18 @@
+clip_id,scene
+bolt-detection__00,conveyor belt
+bolt-multi-size-detection__00,conveyor belt
+bottle-detection__02,objects on a table
+car-detection__03,parking lot from above
+classroom__00,classroom
+driver-action-recognition__00,inside a car
+face-demographics-walking__00,indoor hallway
+face-demographics-walking-and-pause__01,indoor hallway
+fruit-and-vegetable-detection__00,produce on a conveyor
+head-pose-face-detection-female__00,person portrait
+head-pose-face-detection-female-and-male__00,person portrait
+head-pose-face-detection-male__00,person portrait
+one-by-one-person-detection__00,indoor hallway
+people-detection__01,indoor hallway
+person-bicycle-car-detection__00,parking lot from above
+store-aisle-detection__00,retail store aisle
+worker-zone-detection__02,warehouse worker

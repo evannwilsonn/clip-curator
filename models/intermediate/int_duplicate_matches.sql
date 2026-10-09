@@ -19,10 +19,10 @@ near as (
     join {{ ref('stg_video__clips') }} as a on a.clip_id = p.clip_a
     join {{ ref('stg_video__clips') }} as b on b.clip_id = p.clip_b
     cross join (select threshold from {{ ref('qc_rules') }} where rule_id = 'near_duplicate') as r
+    -- frames line up one-for-one with an earlier clip (re-upload), not just "same camera"
     where a.sha256 <> b.sha256
-      and p.clip_similarity >= r.threshold
-      and p.motion_corr >= {{ var('near_dupe_motion_corr') }}
-      and p.brightness_corr >= {{ var('near_dupe_brightness_corr') }}
+      and p.aligned_diff <= r.threshold
+      and p.alignment_ratio <= {{ var('near_dupe_max_alignment_ratio') }}
 )
 
 select clip_id, matches_clip_id, rule_id, similarity from exact where clip_id <> matches_clip_id

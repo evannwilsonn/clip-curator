@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXT = ROOT / "data" / "extracted"
 DB = ROOT / "warehouse" / "clip_curator.duckdb"
 SCHEMA = "raw_video"
-JSON_TABLES = ["clips", "frames", "detections", "scenes", "embeddings", "pairs", "sources"]
+JSON_TABLES = ["clips", "frames", "detections", "scenes", "labels", "embeddings", "pairs", "sources"]
 
 
 def main() -> None:
