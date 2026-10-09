@@ -2,204 +2,300 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Clip Curator</title>
+<meta name="description" content="An AI video pipeline that keeps or cuts every clip for a training dataset, with no human review, scored against known answers.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600&family=Kalam:wght@700&display=swap">
 <style>
+/* An editor's cutting bench: kept clips run along sprocketed select reels, cut clips hang on pins
+   in the trim bin with grease-pencil tags. Graphite bench, black film base, white grease pencil,
+   hot-pink splicing tape as the one accent. */
 :root{
   color-scheme:light;
-  --bg:#f4f5f7;--surface:#ffffff;--surface-2:#f8f9fb;--line:#e3e5ea;--line-2:#d3d6dd;
-  --text:#14161c;--text-2:#4a4f5c;--text-3:#767b88;
-  --s1:#2a6fdb;--s2:#a8630f;--s3:#16865a;--focus:#2a6fdb;
-  --ok:#16865a;--ok-bg:rgba(22,134,90,.10);--warn:#a8630f;--warn-bg:rgba(168,99,15,.12);--bad:#c2412d;--bad-bg:rgba(194,65,45,.10);
-  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --bench:#e6e5e2;--panel:#f3f2ef;--rule:#cfcdc8;--rule-2:#a9a6a0;
+  --ink:#1e1e1f;--ink-2:#46464a;--ink-3:#5f5f65;
+  --film:#151516;--film-2:#2a2a2c;--sprocket:#e6e5e2;
+  --tape:#c4175a;--tape-fill:#ff3d8b;--tape-ink:#ffffff;
+  --pencil:#1e1e1f;
+  --font:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Azeret Mono",ui-monospace,Menlo,monospace;
+  --hand:"Kalam","Segoe Print",cursive;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  color-scheme:dark;--bg:#0c0c12;--surface:#13131b;--surface-2:#191922;--line:#25252f;--line-2:#33333f;
-  --text:#f2f3f6;--text-2:#b4b7c2;--text-3:#878a96;--s1:#3d7eff;--s2:#c27a1a;--s3:#1fa36b;--focus:#7ea8ff;
-  --ok:#4cc38a;--ok-bg:rgba(76,195,138,.12);--warn:#e0a24a;--warn-bg:rgba(224,162,74,.13);--bad:#ff7a6b;--bad-bg:rgba(255,122,107,.12)}}
+  color-scheme:dark;
+  --bench:#232325;--panel:#2c2c2f;--rule:#3b3b3f;--rule-2:#5b5b61;
+  --ink:#f1f0ee;--ink-2:#c9c8c4;--ink-3:#9d9c98;
+  --film:#0c0c0d;--film-2:#1b1b1d;--sprocket:#3a3a3e;
+  --tape:#ff6aa6;--tape-fill:#ff3d8b;--tape-ink:#111112;
+  --pencil:#f6f5f2}}
 :root[data-theme="dark"]{
-  color-scheme:dark;--bg:#0c0c12;--surface:#13131b;--surface-2:#191922;--line:#25252f;--line-2:#33333f;
-  --text:#f2f3f6;--text-2:#b4b7c2;--text-3:#878a96;--s1:#3d7eff;--s2:#c27a1a;--s3:#1fa36b;--focus:#7ea8ff;
-  --ok:#4cc38a;--ok-bg:rgba(76,195,138,.12);--warn:#e0a24a;--warn-bg:rgba(224,162,74,.13);--bad:#ff7a6b;--bad-bg:rgba(255,122,107,.12)}
+  color-scheme:dark;
+  --bench:#232325;--panel:#2c2c2f;--rule:#3b3b3f;--rule-2:#5b5b61;
+  --ink:#f1f0ee;--ink-2:#c9c8c4;--ink-3:#9d9c98;
+  --film:#0c0c0d;--film-2:#1b1b1d;--sprocket:#3a3a3e;
+  --tape:#ff6aa6;--tape-fill:#ff3d8b;--tape-ink:#111112;
+  --pencil:#f6f5f2}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--font)}
-:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
-.wrap{max-width:1320px;margin:0 auto;padding:24px 20px 48px}
-header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px}
-.brand h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
-.brand p{margin:4px 0 0;color:var(--text-2);font-size:14px;max-width:70ch}
-.badge{display:inline-block;margin-left:8px;font:500 11px var(--mono);color:var(--text-3);border:1px solid var(--line-2);border-radius:999px;padding:2px 8px;vertical-align:3px}
-.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:12px}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
-.kpi .lbl{font-size:13px;font-weight:500;color:var(--text-2)}
-.kpi .v{font-size:28px;font-weight:600;letter-spacing:-.02em;margin:6px 0 4px;font-variant-numeric:tabular-nums}
-.kpi .d{font-size:12.5px;color:var(--text-3)}
-.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden}
-.step{padding:14px 16px;border-right:1px solid var(--line);position:relative}
-.step:last-child{border-right:0}
-.step .n{font:500 11px var(--mono);color:var(--text-3)}
-.step b{display:block;font-size:14px;font-weight:600;margin:2px 0}
-.step span{font-size:12.5px;color:var(--text-2)}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
-.card header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.card h2{margin:0;font-size:15px;font-weight:600}
-.card .sub{font-size:12.5px;color:var(--text-3)}
-.full{grid-column:1/-1}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-th{font-weight:500;color:var(--text-3);text-align:right;padding:8px 6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-td small{display:block;color:var(--text-3);font-size:11.5px}
-.pill{display:inline-flex;align-items:center;gap:6px;font:600 11.5px var(--font);border-radius:999px;padding:2px 9px;white-space:nowrap}
-.pill.accept{color:var(--ok);background:var(--ok-bg)}.pill.reject{color:var(--bad);background:var(--bad-bg)}
-.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-.bars .row{display:grid;grid-template-columns:120px minmax(0,1fr) 70px;gap:10px;align-items:center;padding:5px 0;font-size:13px}
-.bars .track{height:12px;background:var(--surface-2);border-radius:4px;overflow:hidden;display:flex}
-.bars .fill{height:100%}
-.bars .n{text-align:right;color:var(--text-2);font-variant-numeric:tabular-nums}
-.seg{display:flex;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px}
-.seg button{font:500 13px var(--font);color:var(--text-2);background:none;border:0;border-radius:7px;padding:6px 11px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-.clip{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface-2);display:flex;flex-direction:column}
-.clip .img{aspect-ratio:16/9;background:#000 center/cover no-repeat;position:relative}
-.clip .img.none{display:grid;place-items:center;background:repeating-linear-gradient(45deg,var(--surface-2),var(--surface-2) 8px,var(--line) 8px,var(--line) 16px);color:var(--text-3);font:500 12px var(--mono)}
-.clip .img .pill{position:absolute;top:8px;left:8px;background:var(--surface)}
-.clip .img .gt{position:absolute;bottom:8px;right:8px;font:500 10.5px var(--mono);background:rgba(0,0,0,.66);color:#fff;border-radius:6px;padding:2px 6px}
-.clip .body{padding:9px 10px 10px;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
-.clip .id{font:500 11.5px var(--mono);color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.clip .why{color:var(--text);font-weight:500}
-.clip .ai{color:var(--text-3)}
-.clip .ai b{color:var(--text-2);font-weight:500}
-.callout{margin:12px 0 0;padding:10px 12px;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;font-size:13.5px;color:var(--text-2)}
-.callout b{color:var(--text);font-weight:600}
-.more{margin-top:10px;font:500 13px var(--font);color:var(--text-2);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer}
-footer.lin{margin-top:18px;color:var(--text-3);font-size:12.5px;line-height:1.6}
-footer.lin code{font-family:var(--mono);font-size:12px;color:var(--text-2)}
-footer.lin a{color:var(--text-2)}
-@media (max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.flow{grid-template-columns:1fr}.step{border-right:0;border-bottom:1px solid var(--line)}.grid{grid-template-columns:1fr}}
-@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.hide-sm{display:none}.gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.bars .row{grid-template-columns:96px minmax(0,1fr) 60px}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bench);color:var(--ink);font:15.5px/1.55 var(--font)}
+a{color:var(--tape)}
+:focus-visible{outline:2px solid var(--tape);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding:22px clamp(16px,3vw,36px) 48px}
+
+/* header + tally */
+.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 28px;align-items:end;padding-bottom:16px;border-bottom:1px solid var(--rule-2)}
+.name{font:700 clamp(30px,4.4vw,48px)/1 var(--font);letter-spacing:-.03em;margin:0}
+.lede{margin:8px 0 0;color:var(--ink-2);max-width:64ch;font-size:16.5px}
+.top{grid-template-columns:1fr}
+.slate{background:var(--film);color:#f6f5f2;margin:16px 0 0;padding:16px 20px 14px;position:relative;font:700 clamp(19px,2.2vw,26px)/1.35 var(--hand)}
+.slate::before,.slate::after{content:"";position:absolute;left:0;right:0;height:6px;background:radial-gradient(circle at 7px 3px,#3a3a3e 2.6px,transparent 3px) 0 0/14px 6px repeat-x}
+.slate::before{top:3px}.slate::after{bottom:3px}
+.slate .tape{font-family:var(--font);font-size:14px;vertical-align:middle;margin-left:4px}
+.tape{display:inline-block;background:var(--tape-fill);color:#111112;font:600 13px/1.3 var(--font);padding:4px 10px 4px;transform:rotate(-.6deg)}
+.tape:nth-child(2n){transform:rotate(.5deg)}
+.tape b{font-family:var(--mono)}
+
+/* reels */
+h2{font:700 24px/1.2 var(--font);letter-spacing:-.02em;margin:34px 0 4px}
+.dek{margin:0 0 14px;color:var(--ink-2);max-width:74ch}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+@media (max-width:1080px){.bench{grid-template-columns:1fr}}
+.reels{display:flex;flex-direction:column;gap:16px;min-width:0}
+.reel-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
+.reel-h b{font:600 15px var(--font)}
+.reel-h span{font:400 12.5px var(--mono);color:var(--ink-3)}
+.strip{background:var(--film);padding:14px 0;position:relative;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#55555b var(--film)}
+::selection{background:var(--tape-fill);color:#111112}
+.strip::before,.strip::after{content:"";position:absolute;left:0;right:0;height:6px;
+  background:radial-gradient(circle at 7px 3px,var(--sprocket) 2.6px,transparent 3px) 0 0/14px 6px repeat-x}
+.strip::before{top:4px}.strip::after{bottom:4px}
+.frames{display:flex;gap:6px;padding:0 6px;width:max-content}
+.fr{flex:none;width:118px;aspect-ratio:16/9;background:var(--film-2);border:0;padding:0;cursor:pointer;position:relative;display:block}
+.fr img{width:100%;height:100%;object-fit:cover;display:block}
+.fr.ref::after{content:"ref";position:absolute;right:3px;top:2px;font:700 12px var(--hand);color:#fff;text-shadow:0 0 3px #000}
+.fr:hover img{filter:brightness(1.12)}
+.fr.sel{outline:3px solid var(--tape-fill);outline-offset:2px;z-index:1}
+@media (max-width:600px){.fr{width:92px}}
+
+/* loupe */
+.loupe{background:var(--panel);border:1px solid var(--rule);position:sticky;top:14px}
+@media (max-width:1080px){.loupe{position:static;margin-top:10px}.pin .loupe{margin-left:-6px}}
+.loupe .big{position:relative;background:var(--film);aspect-ratio:16/9}
+.loupe .big img{width:100%;height:100%;object-fit:cover;display:block}
+.loupe .big .none{position:absolute;inset:0;display:grid;place-items:center;color:#bbb;font:500 13px var(--mono)}
+.loupe .verdict{position:absolute;left:10px;bottom:10px}
+.lb{padding:14px 16px 16px}
+.lb h3{font:600 15px var(--mono);margin:0;overflow-wrap:anywhere}
+.lb .meta{font:400 12.5px var(--font);color:var(--ink-3);margin:2px 0 10px}
+.lb dl{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:0;font-size:13.5px}
+.lb dt{color:var(--ink-3)}
+.lb dd{margin:0;font-family:var(--mono);font-size:13px;overflow-wrap:anywhere}
+.lb .why{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--rule);font-size:14px;color:var(--ink-2)}
+.hand{font:700 16px/1.2 var(--hand);color:var(--pencil)}
+
+/* trim bin */
+.bin{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:22px 16px;padding:18px 16px 6px;background:var(--panel);border:1px solid var(--rule);position:relative}
+.pin{position:relative;padding-top:18px;min-width:0}
+.pin::after{content:"";position:absolute;left:-16px;right:0;top:2px;height:3px;background:var(--rule-2)}
+.pin::before{content:"";position:absolute;z-index:1;left:18px;top:-1px;width:9px;height:9px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--panel)}
+.pin .tag{font:700 17px/1.15 var(--hand);color:var(--pencil);margin:4px 0 2px}
+.pin .rs{font:400 11.5px var(--mono);color:var(--ink-3);margin-bottom:6px}
+.trims{display:flex;flex-direction:column;gap:5px;border-left:2px solid var(--film);margin-left:21px;padding-left:8px}
+.trim{display:grid;grid-template-columns:84px minmax(0,1fr);gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;cursor:pointer;font:inherit}
+.trim .th{width:84px;aspect-ratio:16/9;background:var(--film);overflow:hidden;border:3px solid var(--film)}
+.trim .th img{width:100%;height:100%;object-fit:cover;display:block}
+.trim small{font:700 14px/1.15 var(--hand);color:var(--pencil)}
+.trim .th{position:relative}
+.trim .th .nf{position:absolute;inset:0;display:grid;place-items:center;font:500 10px var(--mono);color:#aaa}
+.trim.sel .th{border-color:var(--tape-fill)}
+.trim:hover small{color:var(--ink)}
+
+/* log sheet */
+.sheet{background:var(--panel);border:1px solid var(--rule);padding:6px 16px 14px;overflow-x:auto}
+table.log{width:100%;border-collapse:collapse;font-size:14px;min-width:620px}
+.log th{font:600 12px var(--font);color:var(--ink-3);text-align:right;padding:10px 8px 6px;border-bottom:1px solid var(--rule-2);white-space:nowrap}
+.log th:first-child,.log td:first-child{text-align:left}
+.log td{padding:8px;border-bottom:1px solid var(--rule-2);text-align:right;font-family:var(--mono);font-size:13px;white-space:nowrap}
+.log td:first-child{font-family:var(--font);font-size:14px;white-space:normal}
+.log td.hand{font:700 16px var(--hand);color:var(--pencil)}
+.log td small{display:block;font:400 12px var(--font);color:var(--ink-3)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--rule);padding:14px 16px 16px}
+.card h3{font:600 16px var(--font);margin:0 0 8px}
+.meter{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:6px 10px;align-items:center;font-size:13.5px;padding:5px 0}
+.meter .track{height:10px;background:var(--bench);position:relative}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ink)}
+.meter .fill.tp{background:var(--tape-fill)}
+.meter b{font:600 13px var(--mono)}
+@media (max-width:520px){.meter{grid-template-columns:1fr auto}.meter .track{grid-column:1 / -1;grid-row:2}}
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin:0;padding:0;list-style:none;border:1px solid var(--rule);background:var(--panel)}
+.pipe li{padding:12px 14px;border-left:1px solid var(--rule);font-size:13.5px;color:var(--ink-2)}
+.pipe li:first-child{border-left:0}
+.pipe b{display:block;font:600 14px var(--font);color:var(--ink)}
+@media (max-width:900px){.pipe{grid-template-columns:1fr}.pipe li{border-left:0;border-top:1px solid var(--rule)}.pipe li:first-child{border-top:0}}
+.src{columns:2 320px;font-size:13px;color:var(--ink-2);margin:8px 0 0;padding:0;list-style:none}
+.src li{break-inside:avoid;padding:3px 0}
+footer{margin-top:36px;padding-top:12px;border-top:1px solid var(--rule-2);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font:400 12.5px var(--mono);color:var(--ink-3)}
+.themebtn{font:600 12px var(--font);background:none;border:1px solid var(--rule-2);color:var(--ink-2);padding:4px 10px;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand">
-      <h1>Clip Curator <span class="badge">AI video data pipeline</span></h1>
-      <p>Real-world clips go in. AI models and quality checks turn them into structured data, and tested rules accept or reject every clip automatically, with no manual review.</p>
+    <div>
+      <h1 class="name">Clip Curator</h1>
+      <p class="lede">An AI video pipeline decides which clips are fit for a training dataset, with no human review. Object detection, scene labels and signal checks become data; governed rules keep or cut every clip, and every decision is scored against known answers.</p>
     </div>
   </header>
+  <div class="slate" id="slate"></div>
 
-  <section class="kpis" id="kpis" aria-label="Summary"></section>
-  <section class="flow" id="flow" aria-label="Pipeline"></section>
+  <h2>The select reels</h2>
+  <p class="dek" id="reelDek"></p>
+  <div class="bench">
+    <div class="left" style="min-width:0">
+      <div class="reels" id="reels"></div>
+      <h2>The trim bin</h2>
+      <p class="dek" id="binDek"></p>
+      <div class="bin" id="bin"></div>
+    </div>
+    <aside class="loupe" id="loupe" aria-live="polite"></aside>
+  </div>
 
-  <section class="grid">
-    <article class="card full">
-      <header><h2>Every clip and its decision</h2>
-        <div class="seg" role="group" aria-label="Filter clips" id="filters"></div></header>
-      <div class="gallery" id="gallery"></div>
-      <button type="button" class="more" id="more" hidden>Show all</button>
-    </article>
-    <article class="card">
-      <header><h2>Rule scorecard</h2><span class="sub">Each rule scored against clips with a known applied defect</span></header>
-      <div style="overflow-x:auto"><table id="rules"></table></div>
-    </article>
-    <article class="card">
-      <header><h2>Defects caught, by type</h2><span class="sub" id="defSub"></span></header>
-      <div class="bars" id="defects"></div>
-      <p class="callout" id="defNote"></p>
-    </article>
-    <article class="card">
-      <header><h2>AI scene labels</h2><span class="sub">Graded against what each source video actually shows</span></header>
-      <div class="bars" id="labels"></div>
-      <p class="callout" id="labelNote"></p>
-    </article>
-    <article class="card">
-      <header><h2>What's in the accepted dataset</h2><span class="sub">By source setting</span></header>
-      <div style="overflow-x:auto"><table id="comp"></table></div>
-    </article>
-    <article class="card">
-      <header><h2>Objects detected (YOLOv8)</h2><span class="sub">Accepted clips only</span></header>
-      <div class="bars" id="objects"></div>
-    </article>
-  </section>
+  <h2>The editor's log</h2>
+  <p class="dek">Each rule is scored against the defects planted on purpose. "Also fired" means the rule fired on a clip planted with a different defect (a black clip is also too dark); it counts toward neither hits nor false alarms.</p>
+  <div class="sheet"><table class="log" id="log"></table></div>
 
-  <footer class="lin" id="lineage"></footer>
+  <div class="two" style="margin-top:22px">
+    <div class="card"><h3>Scene labels from the AI</h3><div id="labels"></div><p class="dek" style="margin:10px 0 0;font-size:13.5px" id="labelNote"></p></div>
+    <div class="card"><h3>What the kept footage holds</h3><div id="comp"></div></div>
+  </div>
+
+  <h2>How it is made</h2>
+  <ol class="pipe">
+    <li><b>Cut</b>Real footage is cut into six-second clips, and a known defect is planted in about a third of them with a fixed seed.</li>
+    <li><b>Extract</b>YOLOv8 finds objects, CLIP labels each scene from reference clips, and signal checks measure exposure, focus, motion, hashes and file integrity.</li>
+    <li><b>Load</b>All of it lands raw in DuckDB or Snowflake.</li>
+    <li><b>Decide</b>dbt applies the governed rules; every clip is kept or cut with its reason.</li>
+    <li><b>Score</b>Rules and labels are tested against the answer key; the build fails if they slip. <code>make verify</code> re-runs the models and checks every output matches byte for byte.</li>
+  </ol>
+  <ul class="src" id="src"></ul>
+
+  <footer>
+    <span id="foot"></span>
+    <a href="https://github.com/evannwilsonn/clip-curator" target="_blank" rel="noopener">github.com/evannwilsonn/clip-curator</a>
+    <button class="themebtn" id="theme" type="button">Switch theme</button>
+  </footer>
 </div>
-
 <script>
-(async function(){
-const D = window.CC_DATA || await fetch('data.json').then(r=>r.json());
+(async () => {
+const D = window.CC_DATA || await fetch('data.json').then(r => r.json());
 const $ = id => document.getElementById(id);
-const objs = t => t.rows.map(r=>Object.fromEntries(t.columns.map((c,i)=>[c,r[i]])));
-const dec = objs(D.decisions), rules = objs(D.rules), defects = objs(D.defects), comp = objs(D.composition), objects = objs(D.objects), lq = objs(D.label_quality);
-const T = D.totals, pct = (v,d=0) => v==null?'–':(v*100).toFixed(d)+'%', num = v => Math.round(v).toLocaleString('en-US');
-const nice = s => s==null?'':s.replace(/_/g,' ');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const T = t => t.rows.map(r => Object.fromEntries(t.columns.map((c, i) => [c, r[i]])));
+const dec = T(D.decisions), rules = T(D.rules), defects = T(D.defects), comp = T(D.composition), labels = T(D.label_quality), sources = T(D.sources);
+const thumb = id => D.thumbs && D.thumbs[id];
+// same population rpt_label_quality grades: readable, not a reference, clean or duplicate
+const graded = d => !d.is_label_reference && d.ai_scene != null && ['none', 'exact_dupe', 'near_dupe'].includes(d.injected_defect);
+const pct = v => Math.round(v * 100) + '%';
+const DEF = {none: 'none (clean)', blurred: 'blurred', too_dark: 'too dark', overexposed: 'overexposed', frozen: 'frozen', black: 'black frames', low_res: 'low resolution', corrupt: 'corrupt file', exact_dupe: 'exact duplicate', near_dupe: 're-upload (near duplicate)', too_short: 'too short'};
+const kept = dec.filter(d => d.decision === 'accept'), cut = dec.filter(d => d.decision === 'reject');
+const planted = dec.filter(d => d.injected_defect !== 'none'), caught = planted.filter(d => d.decision === 'reject');
+const cleanCut = dec.filter(d => d.injected_defect === 'none' && d.decision === 'reject');
+const minutes = kept.reduce((a, d) => a + (d.duration_s || 0), 0) / 60;
 
-const acc=dec.filter(d=>d.decision==='accept'), rej=dec.filter(d=>d.decision==='reject');
-const defective=dec.filter(d=>d.injected_defect!=='none'), caught=defective.filter(d=>d.decision!=='accept');
-const clean=dec.filter(d=>d.injected_defect==='none'), falseFlag=clean.filter(d=>d.decision!=='accept');
-const minutes=acc.reduce((s,d)=>s+(d.duration_s||0),0)/60;
-$('kpis').innerHTML=[
-  ['Clips processed', num(dec.length), `${D.sources.rows.length} source videos, cut into 6-second clips`],
-  ['Accepted', num(acc.length), `${minutes.toFixed(1)} minutes of usable footage`],
-  ['Rejected', num(rej.length), 'Each with the rule that stopped it'],
-  ['Known defects caught', `${caught.length} of ${defective.length}`, `${pct(caught.length/defective.length,1)} recall · ${falseFlag.length} of ${clean.length} clean clips wrongly rejected`],
-  ['Scene labels correct', `${num(lq[0].correct)} of ${num(lq[0].clips_graded)}`, `${pct(lq[0].accuracy,1)} few-shot vs. ${pct(lq[1].accuracy,1)} zero-shot`],
-].map(([l,v,d])=>`<div class="kpi"><div class="lbl">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
+/* tally + tape */
+const few = labels.find(l => /few/.test(l.method)), zero = labels.find(l => /zero/.test(l.method));
+$('slate').innerHTML = `${dec.length} clips in. ${kept.length} kept, ${minutes.toFixed(1)} minutes. ${cut.length} cut: ${caught.length === planted.length ? 'all ' + planted.length : caught.length + ' of ' + planted.length} planted defects, ${cleanCut.length === 0 ? 'no clean clip' : cleanCut.length + ' clean clips'}.` +
+  (few && zero ? ` <span class="tape">few-shot scene labels ${few.correct} of ${few.clips_graded} right (zero-shot ${zero.correct} of ${zero.clips_graded})</span>` : '');
 
-$('flow').innerHTML=[
-  ['01','Collect',`${D.sources.rows.length} CC BY 4.0 videos, SHA-256 logged`],
-  ['02','Extract',`${num(T.frames)} frames scored: exposure, focus, motion`],
-  ['03','AI models',`YOLOv8: ${num(T.detections)} objects · CLIP: ${num(T.scene_scores)} scene scores`],
-  ['04','Warehouse',`Landed raw, modeled in dbt, ${num(T.pairs)} similarity pairs`],
-  ['05','Curate',`${rules.length} rules from one policy table, scored against ground truth on every build`],
-].map(([n,b,s])=>`<div class="step"><span class="n">${n}</span><b>${b}</b><span>${s}</span></div>`).join('');
+/* reels: one per setting, ordered by footage kept */
+const settings = comp.map(c => c.setting).concat([...new Set(kept.map(d => d.setting))].filter(s => !comp.some(c => c.setting === s)));
+const order = [];
+let sel = null;
+$('reels').innerHTML = settings.map(s => {
+  const list = kept.filter(d => d.setting === s);
+  const c = comp.find(x => x.setting === s);
+  list.forEach(d => order.push(d.clip_id));
+  return `<div><div class="reel-h"><b>${esc(s)}</b><span>${list.length} clips${c ? ' · ' + c.minutes.toFixed(1) + ' min · ' + esc(c.scenes) : ''}</span></div>
+    <div class="strip"><div class="frames">${list.map(d => `<button class="fr${d.is_label_reference ? ' ref' : ''}" type="button" data-id="${esc(d.clip_id)}" aria-label="Kept clip ${esc(d.clip_id)}, ${esc(d.ai_scene)}">${thumb(d.clip_id) ? `<img src="${thumb(d.clip_id)}" alt="" loading="lazy">` : ''}</button>`).join('')}</div></div></div>`;
+}).join('');
+$('reelDek').textContent = `${kept.length} kept clips, one reel per setting. Frames marked "ref" are the reference clips the scene labeller learns from. Select any frame to look at it in the loupe; arrow keys move along the reels.`;
 
-/* gallery */
-const FILTERS=[['reject','Rejected',d=>d.decision==='reject'],['accept','Accepted',d=>d.decision==='accept'],['errors','Mistakes',d=>d.outcome==='missed'||d.outcome==='flagged clean clip'||(d.ai_scene&&!d.is_label_reference&&!d.ai_scene_correct&&['none','exact_dupe','near_dupe'].includes(d.injected_defect))]];
-let filter='reject', showAll=false;
-$('filters').innerHTML=FILTERS.map(([k,l,f])=>`<button type="button" data-f="${k}" aria-pressed="${k===filter}">${l} <span style="color:var(--text-3)">${dec.filter(f).length}</span></button>`).join('');
-$('filters').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;filter=b.dataset.f;showAll=false;$('filters').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderGallery()});
-$('more').addEventListener('click',()=>{showAll=true;renderGallery()});
-function renderGallery(){
-  const f=FILTERS.find(x=>x[0]===filter)[2], list=dec.filter(f), lim=showAll?list.length:24;
-  $('gallery').innerHTML=list.slice(0,lim).map(d=>{
-    const th=D.thumbs[d.clip_id];
-    const gt=d.injected_defect!=='none'?`<span class="gt" title="Defect applied when the challenge set was built">applied: ${nice(d.injected_defect)}</span>`:'';
-    const why=d.decision==='accept'?'Passed every rule':(d.reasons||'')+(d.duplicate_of?` <span class="ai">of ${d.duplicate_of}</span>`:'');
-    const mistake=d.outcome==='missed'?' <span style="color:var(--bad)">· missed</span>':d.outcome==='flagged clean clip'?' <span style="color:var(--warn)">· clean clip flagged</span>':'';
-    const qualityFail=d.decision==='reject'&&!/^(Exact duplicate|Re-upload)(, (Exact duplicate|Re-upload))*$/.test(d.reasons||'');
-    const ai=!d.ai_scene?'No AI labels: file unreadable':qualityFail?'Not labeled: failed a quality check':`Scene: <b>${d.ai_scene}</b>${d.is_label_reference?' · labeled reference':d.ai_scene_correct?'':' <span style="color:var(--bad)">(wrong)</span>'}`;
-    return `<div class="clip"><div class="img${th?'':' none'}" ${th?`style="background-image:url(${th})"`:''} role="img" aria-label="Middle frame of ${d.clip_id}">${th?'':'unreadable'}<span class="pill ${d.decision}">${d.decision}</span>${gt}</div>
-      <div class="body"><span class="id" title="${d.clip_id}">${d.clip_id}</span><span class="why">${why}${mistake}</span><span class="ai">${ai}</span>${d.ai_objects?`<span class="ai">Objects: ${d.ai_objects.split(', ').slice(0,4).join(', ')}</span>`:''}</div></div>`}).join('') || '<p class="sub">Nothing here.</p>';
-  $('more').hidden=list.length<=lim; $('more').textContent=`Show all ${list.length}`;
+/* trim bin: one pin per first reason */
+const firstReason = d => (d.reasons || 'Unknown').split(',')[0].trim();
+const byRule = {};
+cut.forEach(d => (byRule[firstReason(d)] ||= []).push(d));
+const ruleOrder = Object.keys(byRule).sort((a, b) => byRule[b].length - byRule[a].length || a.localeCompare(b));
+$('bin').innerHTML = ruleOrder.map(r => {
+  const rule = rules.find(x => x.rule_name === r);
+  return `<div class="pin"><div class="tag">${esc(r)}</div><div class="rs">${byRule[r].length} cut${rule ? ` · threshold ${rule.threshold}` : ''}</div>
+    <div class="trims">${byRule[r].map(d => `<button class="trim" type="button" data-id="${esc(d.clip_id)}" aria-label="Cut clip ${esc(d.clip_id)}: ${esc(d.reasons)}"><span class="th">${thumb(d.clip_id) ? `<img src="${thumb(d.clip_id)}" alt="" loading="lazy">` : '<span class="nf">no frame</span>'}</span><small>planted: ${esc(DEF[d.injected_defect] || d.injected_defect)}${d.reasons && d.reasons.includes(',') ? '<br>+ ' + esc(d.reasons.split(',').slice(1).map(x => x.trim()).join(', ')) : ''}</small></button>`).join('')}</div></div>`;
+}).join('');
+$('binDek').textContent = `${cut.length} cut clips, each filed under one rule that cut it, with any other rules that fired and the defect planted in it from the answer key. ${cleanCut.length === 0 ? 'Every cut clip had a planted defect; no clean clip was cut.' : cleanCut.length + ' clean clips were cut.'}`;
+
+/* loupe */
+function fmtN(v, d = 1) { return v == null ? '–' : Number(v).toFixed(d); }
+function open(id, focus) {
+  sel = id;
+  document.querySelectorAll('.fr,.trim').forEach(b => b.classList.toggle('sel', b.dataset.id === id));
+  const d = dec.find(x => x.clip_id === id);
+  const src = sources.find(s => s.source_id === d.source_id);
+  const keptIt = d.decision === 'accept';
+  $('loupe').innerHTML = `<div class="big">${thumb(id) ? `<img src="${thumb(id)}" alt="Frame from clip ${esc(id)}">` : '<div class="none">No frame (unreadable file)</div>'}
+      <span class="verdict tape">${keptIt ? 'Kept' : 'Cut'}</span></div>
+    <div class="lb">
+      <h3>${esc(id)}</h3>
+      <div class="meta">${esc(d.setting)} · source ${src ? `<a href="${esc(src.source_url)}" target="_blank" rel="noopener">${esc(d.source_id)}</a> (${esc(src.license)})` : esc(d.source_id)}</div>
+      <dl>
+        <dt>AI scene</dt><dd>${esc(d.ai_scene || '–')} ${d.is_label_reference ? '· reference: defines the label' : graded(d) ? (d.ai_scene_correct ? '(graded: right)' : '(graded: wrong)') : '(not graded)'}</dd>
+        <dt>Objects</dt><dd>${esc(d.ai_objects || 'none detected')}${d.contains_people ? ' · people' : ''}</dd>
+        <dt>Length</dt><dd>${fmtN(d.duration_s)} s · ${d.width_px ?? '–'} px wide</dd>
+        <dt>Brightness</dt><dd>${fmtN(d.avg_brightness)}</dd>
+        <dt>Sharpness</dt><dd>${fmtN(d.median_sharpness)}</dd>
+        <dt>Motion</dt><dd>${fmtN(d.avg_motion, 2)}${d.duplicate_of ? ' · duplicate of ' + esc(d.duplicate_of) : ''}</dd>
+      </dl>
+      <p class="why"><span class="hand">${keptIt ? 'kept' : 'cut: ' + esc(d.reasons)}</span><br>Planted defect from the answer key: <b>${esc(DEF[d.injected_defect] || d.injected_defect)}</b>. ${d.outcome === 'caught' ? 'The rules caught it.' : d.outcome === 'clean, accepted' ? 'Clean, and kept.' : esc(d.outcome)}</p>
+    </div>`;
+  if (focus) $('loupe').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest'});
 }
+document.addEventListener('click', e => {
+  const b = e.target.closest('.fr,.trim'); if (!b) return;
+  const L = $('loupe');
+  // narrow screens: the loupe opens right under the reel or pin that was tapped
+  if (innerWidth <= 1080) (b.closest('.strip') || b.closest('.pin')).after(L);
+  else document.querySelector('.bench').appendChild(L);
+  open(b.dataset.id, innerWidth <= 1080);
+});
+$('reels').addEventListener('keydown', e => {
+  const b = e.target.closest('.fr'); if (!b) return;
+  const i = order.indexOf(b.dataset.id);
+  const j = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : -1;
+  if (j < 0 || j >= order.length || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+  e.preventDefault();
+  const n = document.querySelector(`.fr[data-id="${CSS.escape(order[j])}"]`);
+  n.focus(); n.scrollIntoView({block: 'nearest', inline: 'nearest'}); open(order[j], false);
+});
 
-$('rules').innerHTML=`<thead><tr><th>Rule</th><th>Threshold</th><th>Fired</th><th>Caught</th><th>False alarms</th><th>Recall</th><th class="hide-sm">Precision</th></tr></thead><tbody>`+
-  rules.map(r=>`<tr><td>${r.rule_name}<small>${r.action} · targets ${nice(r.targets_defect)}</small></td><td>${r.threshold}</td><td>${num(r.fired)}</td><td>${num(r.hits)} / ${num(r.target_clips)}</td><td style="color:${r.false_alarms>0?'var(--warn)':'inherit'}">${num(r.false_alarms)}</td><td>${pct(r.recall)}</td><td class="hide-sm">${pct(r.precision)}</td></tr>`).join('')+'</tbody>';
+/* log sheet */
+const logRules = ruleOrder.map(n => rules.find(r => r.rule_name === n)).filter(Boolean).concat(rules.filter(r => !ruleOrder.includes(r.rule_name)));
+$('log').innerHTML = `<thead><tr><th>Rule</th><th>Threshold</th><th>Planted</th><th>Caught</th><th>False alarms</th><th>Also fired</th><th>Recall</th><th>Precision</th></tr></thead><tbody>${logRules.map(r => `<tr><td>${esc(r.rule_name)}<small>${esc(r.action)} · targets ${esc(DEF[r.targets_defect] || r.targets_defect)}</small></td><td>${r.threshold}</td><td>${r.target_clips}</td><td>${r.hits}</td><td>${r.false_alarms}</td><td>${r.fired_on_other_defects}</td><td class="hand">${pct(r.recall)}</td><td class="hand">${pct(r.precision)}</td></tr>`).join('')}</tbody>`;
 
-const dd=defects.filter(d=>d.injected_defect!=='none').sort((a,b)=>b.reject_rate-a.reject_rate||a.injected_defect.localeCompare(b.injected_defect));
-$('defSub').textContent=`${caught.length} of ${defective.length} applied defects stopped`;
-$('defects').innerHTML=dd.map(d=>`<div class="row"><span>${nice(d.injected_defect)}</span><div class="track"><div class="fill" style="width:${d.rejected/d.clips*100}%;background:var(--bad)"></div></div><span class="n">${num(d.rejected)} / ${num(d.clips)}</span></div>`).join('');
-const missed=dec.filter(d=>d.outcome==='missed'), ff=dec.filter(d=>d.outcome==='flagged clean clip');
-$('defNote').innerHTML=(missed.length||ff.length)
-  ? `<b>Mistakes this run:</b> ${missed.map(m=>`a ${nice(m.injected_defect)} (${m.clip_id}) slipped through`).concat(ff.map(m=>`${m.clip_id} was rejected for ${m.reasons}`)).join('; ')}.`
-  : `<b>No mistakes this run:</b> every applied defect was rejected and every clean clip was kept. The build fails if recall drops below 95%, more than 2% of clean clips get rejected, or labels fall under 95% correct, and a second run of the models reproduces every number exactly.`;
+/* labels + composition */
+$('labels').innerHTML = labels.map(l => `<div class="meter"><span>${esc(l.method)}</span><span class="track"><span class="fill${/few/.test(l.method) ? ' tp' : ''}" style="width:${l.accuracy * 100}%"></span></span><b>${l.correct} / ${l.clips_graded}</b></div>`).join('');
+$('labelNote').textContent = few && zero ? `Labelling from ${few.clips_graded} graded clips: reference clips (few-shot) got ${pct(few.accuracy)}, text prompts alone (zero-shot) ${pct(zero.accuracy)}.` : '';
+const cmax = Math.max(...comp.map(c => c.minutes));
+$('comp').innerHTML = comp.map(c => `<div class="meter"><span>${esc(c.setting)}</span><span class="track"><span class="fill" style="width:${c.minutes / cmax * 100}%"></span></span><b>${c.minutes.toFixed(1)} min · ${pct(c.share_with_people)} people</b></div>`).join('');
 
-$('comp').innerHTML=`<thead><tr><th>Setting</th><th>Clips</th><th class="hide-sm">Minutes</th><th>With people</th><th class="hide-sm">Scenes</th></tr></thead><tbody>`+
-  comp.map(c=>`<tr><td>${c.setting}</td><td>${num(c.accepted_clips)}</td><td class="hide-sm">${c.minutes.toFixed(1)}</td><td>${pct(c.share_with_people)}</td><td class="hide-sm" style="white-space:normal;text-align:right">${c.scenes}</td></tr>`).join('')+'</tbody>';
-$('labels').innerHTML=lq.map(l=>`<div class="row"><span>${l.method.split(' (')[0]}</span><div class="track"><div class="fill" style="width:${l.accuracy*100}%;background:${l.accuracy>=.95?'var(--ok)':'var(--warn)'}"></div></div><span class="n">${pct(l.accuracy,1)}</span></div>`).join('');
-$('labelNote').innerHTML=`Text prompts alone (zero-shot) got <b>${num(lq[1].correct)} of ${num(lq[1].clips_graded)}</b>: CLIP mistook a grey conveyor belt for asphalt and people paused in a hallway for portraits. The pipeline instead labels by example: one labeled reference clip per source video becomes a scene centroid, and every other clip takes the nearest one. That gets <b>${num(lq[0].correct)} of ${num(lq[0].clips_graded)}</b> right on clips the references never included.`;
+$('src').innerHTML = sources.map(s => `<li><a href="${esc(s.source_url)}" target="_blank" rel="noopener">${esc(s.source_id)}</a> · ${esc(s.license)}</li>`).join('');
+const t = D.totals || {};
+$('foot').textContent = `${t.clips ?? dec.length} clips · ${t.frames ?? '–'} frames analysed · ${t.detections ?? '–'} object detections · ${t.pairs ?? '–'} duplicate pairs compared · exported ${D.generated}`;
+$('theme').addEventListener('click', () => { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; });
 
-const om=Math.max(...objects.map(o=>o.clips));
-$('objects').innerHTML=objects.map(o=>`<div class="row"><span>${o.object_label}</span><div class="track"><div class="fill" style="width:${o.clips/om*100}%;background:var(--s1)"></div></div><span class="n">${num(o.clips)} clips</span></div>`).join('');
-
-$('lineage').innerHTML=`Built from <code>reporting.rpt_clip_decisions</code> and four supporting marts (dbt) · source footage: <a href="https://github.com/intel-iot-devkit/sample-videos">Intel IoT DevKit sample videos</a>, CC BY 4.0 · defects in the challenge set were applied on purpose with a fixed seed so the rules can be scored · exported ${D.generated} · <a href="https://github.com/evannwilsonn/clip-curator">github.com/evannwilsonn/clip-curator</a>`;
-renderGallery();
+// open a planted-defect clip first so the loupe shows the system at work
+open(order[0] || dec[0].clip_id, false);
 })();
 </script>
 </body>
