@@ -10,16 +10,23 @@ import json
 from datetime import date
 from pathlib import Path
 
-import cv2
 import duckdb
+
+try:  # thumbnails need OpenCV and the clip files; without them, the last published thumbnails are reused
+    import cv2
+except ImportError:
+    cv2 = None
 
 ROOT = Path(__file__).resolve().parents[1]
 DB = ROOT / "warehouse" / "clip_curator.duckdb"
 CLIPS = ROOT / "data" / "clips"
 OUT = ROOT / "dashboard" / "data.json"
+PREVIOUS_THUMBS = json.loads(OUT.read_text()).get("thumbs", {}) if OUT.exists() else {}
 
 
 def thumb(path: Path) -> str | None:
+    if cv2 is None or not path.exists():
+        return PREVIOUS_THUMBS.get(path.stem)
     cap = cv2.VideoCapture(str(path))
     n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
     cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, n // 2))
